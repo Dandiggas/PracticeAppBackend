@@ -6,4 +6,4 @@ psycopg2-binary==2.9.3
 pytz==2024.1
 sqlparse==0.4.4
 django-cors-headers==3.10.0
-
+dj-rest-auth==2.1.11

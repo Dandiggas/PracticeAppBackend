@@ -40,6 +40,9 @@ INSTALLED_APPS = [
     # 3rd-party apps
     "rest_framework",
     "corsheaders",
+    "rest_framework.authtoken",
+    "dj_rest_auth",
+    
     # Local
     "accounts.apps.AccountsConfig",
     "session.apps.SessionConfig",
@@ -134,7 +137,11 @@ AUTH_USER_MODEL = "accounts.CustomUser"
 
 REST_FRAMEWORK = {  
     "DEFAULT_PERMISSION_CLASSES": [
-        "rest_framework.permissions.AllowAny",
+        "rest_framework.permissions.IsAuthenticated",],
+        "DEFAULT_AUTHENTICATION_CLASSES":[
+            "rest_framework.authentication.SessionAuthentication",
+            "rest_framework.authentication.TokenAuthentication",
+        
     ],
 }
 
