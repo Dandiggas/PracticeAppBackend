@@ -37,11 +37,19 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django.contrib.sites",
+
     # 3rd-party apps
     "rest_framework",
     "corsheaders",
     "rest_framework.authtoken",
+    "allauth",
+    "allauth.account",
+    "allauth.socialaccount",
     "dj_rest_auth",
+    "dj_rest_auth.registration",
+    "drf_spectacular",
+
     
     # Local
     "accounts.apps.AccountsConfig",
@@ -72,10 +80,16 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "django.template.context_processors.request",
             ],
         },
     },
 ]
+
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
+SITE_ID = 1
+
 
 WSGI_APPLICATION = "django_project.wsgi.application"
 
@@ -143,6 +157,7 @@ REST_FRAMEWORK = {
             "rest_framework.authentication.TokenAuthentication",
         
     ],
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
 
 CORS_ORIGIN_WHITELIST = (
@@ -151,4 +166,12 @@ CORS_ORIGIN_WHITELIST = (
 )
 
 CSRF_TRUSTED_ORIGINS = ["http://localhost:3000"]
+
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Musicians Practice App",
+    "DESCRIPTION": "The backend for my musician practice app",
+    "VERSION": "1.0.0",
+
+}
 
