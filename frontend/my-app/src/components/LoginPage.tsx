@@ -20,7 +20,12 @@ const LoginForm = () => {
     setIsLoading(true);
     try {
       const response = await axios.post('http://localhost:8000/api/v1/dj-rest-auth/login/', formData);
-      localStorage.setItem('token', response.data.key);  // Save token
+      localStorage.setItem('token', response.data.key); // Save token
+      
+      // Assuming the user ID is in the response data, adjust according to your API
+      localStorage.setItem('userId', response.data.user); // Save user ID
+      console.log(response.data)
+
       setRedirect(true);
     } catch (error) {
       console.error('Login error', error);
@@ -35,7 +40,7 @@ const LoginForm = () => {
   }
 
   return (
-    <div className="login-container"> {/* Add some CSS class for styling */}
+    <div className="login-container">
       <div style={{ color: 'red' }}>{error}</div>
       <form onSubmit={handleSubmit}>
         <input
@@ -44,7 +49,6 @@ const LoginForm = () => {
           value={formData.username}
           onChange={handleChange}
           placeholder="Username"
-          // Add classes for styling
         />
         <input
           type="password"
@@ -52,7 +56,6 @@ const LoginForm = () => {
           value={formData.password}
           onChange={handleChange}
           placeholder="Password"
-          // Add classes for styling
         />
         <button type="submit" disabled={isLoading}>
           {isLoading ? 'Logging in...' : 'Login'}
