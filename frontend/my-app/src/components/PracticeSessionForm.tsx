@@ -22,8 +22,61 @@ const PracticeSessionForm: React.FC<PracticeSessionFormProps> = ({ practiceSessi
     description: practiceSessionData?.description || '',
     session_date: practiceSessionData?.session_date || '',
   });
+  
+  const [allSessions, setAllSessions] = useState<PracticeSession[]>([]);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [selectedSessionIdForDeletion, setSelectedSessionIdForDeletion] = useState<number | ''>('');
   const [error, setError] = useState<string>('');
+  const [sessions, setSessions] = React.useState<PracticeSession[]>([]);
+
+
+
+React.useEffect(() => {
+  fetchSessions();
+}, []);
+
+const fetchSessions = async () => {
+
+  const token = localStorage.getItem('token')
+  if (token){
+    try {
+      const response = await axios.get('http://localhost:8000/api/v1/', {
+        headers: { Authorization: `Token ${token}` }
+      });
+      setSessions(response.data);
+    } catch (error){
+      setError('Failed to fetch sessions');
+    }
+  }
+
+  ;
+};
+
+const handleSessionSelect = (session: PracticeSession) => {
+
+  setFormData(session);
+};
+
+
+  useEffect(() => {
+
+    const fetchSessions = async () => {
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          const response = await axios.get('http://localhost:8000/api/v1/', {
+            headers: { Authorization: `Token ${token}` }
+          });
+          setAllSessions(response.data);  
+        } catch (error) {
+          setError('Failed to fetch sessions');
+        }
+      }
+    };
+
+    fetchSessions();
+  }, []);
+
 
   useEffect(() => {
     // Fetch the current user's details when the component mounts
@@ -70,6 +123,7 @@ const PracticeSessionForm: React.FC<PracticeSessionFormProps> = ({ practiceSessi
     try {
       const method = practiceSessionData ? 'put' : 'post';
       const response = await axios({ method, url, data: formData, headers });
+      window.location.reload(); 
 
       setPracticeSessions(prev => practiceSessionData
         ? prev.map(s => s.session_id === practiceSessionData.session_id ? response.data : s)
@@ -85,29 +139,43 @@ const PracticeSessionForm: React.FC<PracticeSessionFormProps> = ({ practiceSessi
     }
   };
 
-  const handleDelete = async () => {
-    if (practiceSessionData && window.confirm('Are you sure you want to delete this practice session?')) {
+  const handleSessionChangeForDeletion = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedSessionIdForDeletion(Number(e.target.value));
+  };
+
+ 
+  const handleSessionDeletion = async () => {
+    if (!selectedSessionIdForDeletion) {
+      setError('No session selected for deletion.');
+      return;
+    }
+    if (window.confirm('Are you sure you want to delete this session?')) {
       setIsSubmitting(true);
       const token = localStorage.getItem('token');
       const headers = { Authorization: `Token ${token}` };
-      const url = `http://localhost:8000/api/v1/${practiceSessionData.session_id}/`;
-
       try {
-        await axios.delete(url, { headers });
-        setPracticeSessions(prev => prev.filter(s => s.session_id !== practiceSessionData.session_id));
-      } catch (err) {
-        if (axios.isAxiosError(err)) {
-          setError('Error: ' + err.response?.data?.message || err.message);
-        } else {
-          setError('An unknown error occurred');
-        }
-      } finally {
+        await axios.delete(`http://localhost:8000/api/v1/${selectedSessionIdForDeletion}/`, { headers });
+        window.location.reload(); 
+      } catch (error) {
+        setError('Failed to delete the session');
         setIsSubmitting(false);
       }
     }
   };
+  // Function to handle changes in the form fields
+ 
+
+  
 
   return (
+  <div>    
+    <ul>
+  {sessions.map(session => (
+    <li key={session.session_id} onClick={() => handleSessionSelect(session)}>
+      {session.instrument}
+    </li>
+  ))}
+</ul>
     <form onSubmit={handleSubmit}>
       <input
         type="text"
@@ -136,16 +204,26 @@ const PracticeSessionForm: React.FC<PracticeSessionFormProps> = ({ practiceSessi
         value={formData.session_date}
         onChange={handleChange}
       />
-      <button type="submit" disabled={isSubmitting}>
-        {practiceSessionData ? 'Update Session' : 'Add Session'}
-      </button>
-      {practiceSessionData && (
-        <button type="button" onClick={handleDelete} disabled={isSubmitting}>
-          Delete Session
+              <button type="submit" disabled={isSubmitting}>
+          {practiceSessionData ? 'Update Session' : 'Add Session'}
         </button>
-      )}
-      {error && <p>{error}</p>}
+
     </form>
+    <select value={selectedSessionIdForDeletion} onChange={handleSessionChangeForDeletion} disabled={isSubmitting}>
+        <option value="">Select a session to delete</option>
+        {allSessions.map(session => (
+          <option key={session.session_id} value={session.session_id}>
+            Session ID: {session.session_id} - {session.instrument}
+          </option>
+        ))}
+      </select>
+      <button onClick={handleSessionDeletion} disabled={!selectedSessionIdForDeletion || isSubmitting}>
+        Delete Selected Session
+      </button>
+  
+        {error && <p>{error}</p>}
+    </div>
+    
   );
 };
 
