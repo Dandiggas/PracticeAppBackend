@@ -7,6 +7,7 @@ class SessionSerializer(serializers.ModelSerializer):
     class Meta:
         fields = (
             "session_id",
+            "display_id",
             "user",
             "instrument",
             "duration",
@@ -14,4 +15,5 @@ class SessionSerializer(serializers.ModelSerializer):
             "session_date",
         )
         model = Session
+        read_only_fields = ['display_id']
 

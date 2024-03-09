@@ -9,3 +9,4 @@ django-cors-headers==3.10.0
 dj-rest-auth==2.1.11
 django-allauth==0.48.0
 drf-spectacular==0.21.0
+openai==1.13.3

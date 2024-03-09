@@ -2,12 +2,11 @@ import React from 'react';
 import { Line } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
 
-
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
-interface Session {
-  session_id: number;
-  user: number;
+interface PracticeSession {
+  session_id?: number;
+  user?: number;
   instrument: string;
   duration: string;
   description: string;
@@ -15,9 +14,8 @@ interface Session {
 }
 
 interface PracticeChartProps {
-  sessions: Session[];
+  sessions: PracticeSession[];
 }
-
 
 const timeToSeconds = (time: string) => {
   const [hours, minutes, seconds] = time.split(':').map(Number);
@@ -50,8 +48,8 @@ const PracticeChart = ({ sessions }: PracticeChartProps) => {
   const chartData = processDataForChart();
 
   const firstInstrument = Object.keys(chartData)[0];
-  const dates = Object.keys(chartData[firstInstrument]).sort();
-  const durations = dates.map(date => chartData[firstInstrument][date] / 60); // Convert seconds to minutes
+  const dates = Object.keys(chartData[firstInstrument] || {}).sort();
+  const durations = dates.map(date => (chartData[firstInstrument]?.[date] || 0) / 60); // Convert seconds to minutes
 
   const data = {
     labels: dates,
@@ -84,7 +82,7 @@ const PracticeChart = ({ sessions }: PracticeChartProps) => {
     plugins: {
       legend: {
         display: true,
-        position: 'top' as const, 
+        position: 'top' as const,
       },
       title: {
         display: true,

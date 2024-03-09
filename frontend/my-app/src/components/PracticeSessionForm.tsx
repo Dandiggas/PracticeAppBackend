@@ -1,9 +1,11 @@
 import React, { useState, useEffect, FormEvent, ChangeEvent } from 'react';
 import axios from 'axios';
+import PracticeChart from './PracticeChart';
 
 export interface PracticeSession {
   session_id?: number;
-  user?: number; // This will be fetched from the backend and included in the state
+  display_id?: number;
+  user?: number;
   instrument: string;
   duration: string;
   description: string;
@@ -11,7 +13,7 @@ export interface PracticeSession {
 }
 
 interface PracticeSessionFormProps {
-  practiceSessionData?: PracticeSession; // Optional for new sessions
+  practiceSessionData?: PracticeSession;
   setPracticeSessions: React.Dispatch<React.SetStateAction<PracticeSession[]>>;
 }
 
@@ -26,79 +28,62 @@ const PracticeSessionForm: React.FC<PracticeSessionFormProps> = ({ practiceSessi
   const [allSessions, setAllSessions] = useState<PracticeSession[]>([]);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [selectedSessionIdForDeletion, setSelectedSessionIdForDeletion] = useState<number | ''>('');
+  const [selectedSessionIdForUpdate, setSelectedSessionIdForUpdate] = useState<number | ''>('');
   const [error, setError] = useState<string>('');
-  const [sessions, setSessions] = React.useState<PracticeSession[]>([]);
-
-
-
-React.useEffect(() => {
-  fetchSessions();
-}, []);
-
-const fetchSessions = async () => {
-
-  const token = localStorage.getItem('token')
-  if (token){
-    try {
-      const response = await axios.get('http://localhost:8000/api/v1/', {
-        headers: { Authorization: `Token ${token}` }
-      });
-      setSessions(response.data);
-    } catch (error){
-      setError('Failed to fetch sessions');
-    }
-  }
-
-  ;
-};
-
-const handleSessionSelect = (session: PracticeSession) => {
-
-  setFormData(session);
-};
-
 
   useEffect(() => {
-
-    const fetchSessions = async () => {
-      const token = localStorage.getItem('token');
-      if (token) {
-        try {
-          const response = await axios.get('http://localhost:8000/api/v1/', {
-            headers: { Authorization: `Token ${token}` }
-          });
-          setAllSessions(response.data);  
-        } catch (error) {
-          setError('Failed to fetch sessions');
-        }
-      }
-    };
-
     fetchSessions();
-  }, []);
-
-
-  useEffect(() => {
-    // Fetch the current user's details when the component mounts
-    const fetchUserDetails = async () => {
-      const token = localStorage.getItem('token');
-      if (token) {
-        try {
-          const response = await axios.get('http://localhost:8000/api/v1/current-user/', {
-            headers: { Authorization: `Token ${token}` }
-          });
-          setFormData(currentFormData => ({
-            ...currentFormData,
-            user: response.data.id // Set the user ID in the form data
-          }));
-        } catch (error) {
-          setError('Failed to fetch user details');
-        }
-      }
-    };
-
     fetchUserDetails();
-  }, []);
+  }, []); // Empty dependency array to run the effect only once
+
+  const fetchSessions = async () => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const response = await axios.get('http://localhost:8000/api/v1/', {
+          headers: { Authorization: `Token ${token}` }
+        });
+        setAllSessions(response.data);
+      } catch (error) {
+        setError('Failed to fetch sessions');
+      }
+    }
+  };
+
+  const fetchUserDetails = async () => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const response = await axios.get('http://localhost:8000/api/v1/current-user/', {
+          headers: { Authorization: `Token ${token}` }
+        });
+        setFormData(currentFormData => ({
+          ...currentFormData,
+          user: response.data.id
+        }));
+      } catch (error) {
+        setError('Failed to fetch user details');
+      }
+    }
+  };
+
+  const handleSessionSelectForUpdate = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const sessionId = Number(e.target.value);
+    setSelectedSessionIdForUpdate(sessionId);
+    if (sessionId === 0) {
+      setFormData({
+        instrument: '',
+        duration: '',
+        description: '',
+        session_date: '',
+      });
+    } else {
+      const selectedSession = allSessions.find(session => session.session_id === sessionId);
+      if (selectedSession) {
+        setFormData(selectedSession);
+      }
+    }
+  };
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -109,7 +94,6 @@ const handleSessionSelect = (session: PracticeSession) => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // Prevent form from submitting if the user ID is not set
     if (!formData.user) {
       setError('User ID is not set. Unable to create session.');
       return;
@@ -118,16 +102,28 @@ const handleSessionSelect = (session: PracticeSession) => {
     const token = localStorage.getItem('token');
     const headers = { Authorization: `Token ${token}` };
     const apiUrl = 'http://localhost:8000/api/v1/';
-    const url = practiceSessionData ? `${apiUrl}${practiceSessionData.session_id}/` : apiUrl;
+    const url = selectedSessionIdForUpdate ? `${apiUrl}${selectedSessionIdForUpdate}/` : apiUrl;
 
     try {
-      const method = practiceSessionData ? 'put' : 'post';
+      const method = selectedSessionIdForUpdate ? 'put' : 'post';
       const response = await axios({ method, url, data: formData, headers });
-      window.location.reload(); 
 
-      setPracticeSessions(prev => practiceSessionData
-        ? prev.map(s => s.session_id === practiceSessionData.session_id ? response.data : s)
+      setPracticeSessions(prev => selectedSessionIdForUpdate
+        ? prev.map(s => s.session_id === selectedSessionIdForUpdate ? response.data : s)
         : [...prev, response.data]);
+      
+      setAllSessions(prev => selectedSessionIdForUpdate
+        ? prev.map(s => s.session_id === selectedSessionIdForUpdate ? response.data : s)
+        : [...prev, response.data]);
+      
+      setFormData({
+        instrument: '',
+        duration: '',
+        description: '',
+        session_date: '',
+      });
+      setSelectedSessionIdForUpdate('');
+      window.location.reload();
     } catch (err) {
       if (axios.isAxiosError(err)) {
         setError('Error: ' + err.response?.data?.message || err.message);
@@ -143,7 +139,6 @@ const handleSessionSelect = (session: PracticeSession) => {
     setSelectedSessionIdForDeletion(Number(e.target.value));
   };
 
- 
   const handleSessionDeletion = async () => {
     if (!selectedSessionIdForDeletion) {
       setError('No session selected for deletion.');
@@ -155,79 +150,81 @@ const handleSessionSelect = (session: PracticeSession) => {
       const headers = { Authorization: `Token ${token}` };
       try {
         await axios.delete(`http://localhost:8000/api/v1/${selectedSessionIdForDeletion}/`, { headers });
-        window.location.reload(); 
+        setAllSessions(prev => prev.filter(s => s.session_id !== selectedSessionIdForDeletion));
+        setPracticeSessions(prev => prev.filter(s => s.session_id !== selectedSessionIdForDeletion));
+        setSelectedSessionIdForDeletion('');
+        window.location.reload();
       } catch (error) {
         setError('Failed to delete the session');
+      } finally {
         setIsSubmitting(false);
       }
     }
   };
-  // Function to handle changes in the form fields
- 
-
-  
 
   return (
-  <div>    
-    <ul>
-  {sessions.map(session => (
-    <li key={session.session_id} onClick={() => handleSessionSelect(session)}>
-      {session.instrument}
-    </li>
-  ))}
-</ul>
-    <form onSubmit={handleSubmit}>
-      <input
-        type="text"
-        name="instrument"
-        value={formData.instrument}
-        onChange={handleChange}
-        placeholder="Instrument"
-      />
-      <input
-        type="text"
-        name="duration"
-        value={formData.duration}
-        onChange={handleChange}
-        placeholder="Duration"
-      />
-      <input
-        type="text"
-        name="description"
-        value={formData.description}
-        onChange={handleChange}
-        placeholder="Description"
-      />
-      <input
-        type="date"
-        name="session_date"
-        value={formData.session_date}
-        onChange={handleChange}
-      />
-              <button type="submit" disabled={isSubmitting}>
-          {practiceSessionData ? 'Update Session' : 'Add Session'}
+    <div>
+      <select value={selectedSessionIdForUpdate} onChange={handleSessionSelectForUpdate}>
+        <option value="0">Create New Session</option>
+        {allSessions.map((session, index) => {
+    const displayNumber = index + 1;
+    return (
+      <option key={session.session_id} value={session.session_id}>
+        Session {displayNumber} - {session.instrument}
+      </option>
+    );
+  })}
+      </select>
+      <form onSubmit={handleSubmit}>
+        <input
+          type="text"
+          name="instrument"
+          value={formData.instrument}
+          onChange={handleChange}
+          placeholder="Instrument"
+        />
+        <input
+          type="text"
+          name="duration"
+          value={formData.duration}
+          onChange={handleChange}
+          placeholder="Duration"
+        />
+        <input
+          type="text"
+          name="description"
+          value={formData.description}
+          onChange={handleChange}
+          placeholder="Description"
+        />
+        <input
+          type="date"
+          name="session_date"
+          value={formData.session_date}
+          onChange={handleChange}
+        />
+        <button type="submit" disabled={isSubmitting}>
+          {selectedSessionIdForUpdate ? 'Update Session' : 'Add Session'}
         </button>
-
-    </form>
-    <select value={selectedSessionIdForDeletion} onChange={handleSessionChangeForDeletion} disabled={isSubmitting}>
+      </form>
+      <select value={selectedSessionIdForDeletion} onChange={handleSessionChangeForDeletion} disabled={isSubmitting}>
         <option value="">Select a session to delete</option>
-        {allSessions.map(session => (
-          <option key={session.session_id} value={session.session_id}>
-            Session ID: {session.session_id} - {session.instrument}
-          </option>
-        ))}
+        {allSessions.map((session, index) => {
+    const displayNumber = index + 1;
+    return (
+      <option key={session.session_id} value={session.session_id}>
+        Session {displayNumber} - {session.instrument}
+      </option>
+    );
+  })}
       </select>
       <button onClick={handleSessionDeletion} disabled={!selectedSessionIdForDeletion || isSubmitting}>
         Delete Selected Session
       </button>
-  
-        {error && <p>{error}</p>}
+      {error && <p>{error}</p>}
+
     </div>
-    
   );
 };
 
 export default PracticeSessionForm;
-
-
-

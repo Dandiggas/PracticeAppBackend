@@ -3,11 +3,13 @@ import axios from 'axios';
 import PracticeChart from './PracticeChart';
 import PracticeSessionForm from './PracticeSessionForm';
 import { PracticeSession } from './PracticeSessionForm'
+import LogoutButton from './LogoutButton';
 
 
 
 interface Session {
   session_id: number;
+  display_id?: number;
   user: number; 
   instrument: string;
   duration: string;
@@ -65,8 +67,11 @@ const ProfilePage = () => {
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-3xl font-bold text-center my-10">Welcome, {username}!</h1>
+      <div style={{ width: '600px', height: '400px' }}>
+        <PracticeChart sessions={sessions} />
+      </div>
       <h2 className="text-2xl font-bold my-5">Your Sessions</h2>
-      {/* <PracticeChart sessions={sessions} /> */}
+
       <table className="min-w-full">
         <thead>
           <tr>
@@ -78,21 +83,25 @@ const ProfilePage = () => {
           </tr>
         </thead>
         <tbody>
-          {sessions.map(session => (
-            <tr key={session.session_id}>
-              <td>{session.session_id}</td>
-              <td>{session.instrument}</td>
-              <td>{session.duration}</td>
-              <td>{session.description}</td>
-              <td>{session.session_date}</td>
-            </tr>
-          ))}
+          {sessions.map((session, index) => {    
+          const displayNumber = index + 1;
+    return (
+      <tr key={session.session_id}>
+        <td>{displayNumber}</td>
+        <td>{session.instrument}</td>
+        <td>{session.duration}</td>
+        <td>{session.description}</td>
+        <td>{session.session_date}</td>
+      </tr>
+    );
+})}
         </tbody>
       </table>
       <PracticeSessionForm 
         setPracticeSessions={setPracticeSessions} 
         // Optionally, include practiceSessionData if editing an existing session
       />
+      <LogoutButton />
     </div>
   );
 };
